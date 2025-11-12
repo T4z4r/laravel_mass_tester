@@ -47,8 +47,9 @@ class LaravelMassTester:
         tk.Button(path_frame, text="Browse", command=self.browse_local).pack(side=tk.RIGHT)
 
         tk.Button(frame, text="Scan Models", command=self.scan_local, bg="#2196F3", fg="white").pack(pady=10)
+        tk.Button(frame, text="Export Results", command=self.export_results).pack(pady=5)
 
-        self.local_results = scrolledtext.ScrolledText(frame, height=25, state='disabled')
+        self.local_results = scrolledtext.ScrolledText(frame, height=25, state='disabled', bg="#000000", fg="#00FF00", font=("Courier", 10))
         self.local_results.pack(pady=10, padx=20, fill=tk.BOTH, expand=True)
 
     def setup_online_tab(self):
@@ -96,9 +97,10 @@ class LaravelMassTester:
         if folder:
             self.local_path.set(folder)
 
-    def log_local(self, text):
+    def log_local(self, text, color="#00FF00"):
         self.local_results.config(state='normal')
-        self.local_results.insert(tk.END, text + "\n")
+        self.local_results.insert(tk.END, text + "\n", color)
+        self.local_results.tag_config(color, foreground=color)
         self.local_results.see(tk.END)
         self.local_results.config(state='disabled')
 
@@ -137,6 +139,17 @@ class LaravelMassTester:
 
         self.log_local("\nScan complete. Use Online tab for safe endpoint testing.")
 
+    def export_results(self):
+        content = self.local_results.get(1.0, tk.END).strip()
+        if not content:
+            messagebox.showinfo("No Results", "No results to export.")
+            return
+        file_path = filedialog.asksaveasfilename(defaultextension=".txt", filetypes=[("Text files", "*.txt"), ("All files", "*.*")])
+        if file_path:
+            with open(file_path, 'w') as f:
+                f.write(content)
+            messagebox.showinfo("Exported", f"Results exported to {file_path}")
+
     def analyze_model(self, file_path):
         content = file_path.read_text(errors='ignore')
         name = file_path.stem
@@ -151,7 +164,7 @@ class LaravelMassTester:
         elif guarded and '*' in guarded.group(1):
             self.log_local(f"SAFE {name}: $guarded = ['*']")
         else:
-            self.log_local(f"RISK {name}: NO MASS ASSIGNMENT PROTECTION!")
+            self.log_local(f"RISK {name}: NO MASS ASSIGNMENT PROTECTION!", "#FF0000")
 
     def send_test(self):
         if not messagebox.askyesno("Confirm", "Send test payload to live server?\n\nThis will make a real HTTP request."):
